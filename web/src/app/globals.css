@@ -1,16 +1,24 @@
 @import "tailwindcss";
 
+/* tasteskill app sheet: Achromatic ledger (workspace), ground = stone */
 @theme {
-  --color-paper: #faf7f2;
-  --color-ink: #1c1917;
-  --color-muted: #78716c;
-  --color-line: #e7e0d6;
-  --color-accent: #3b2fd0;
-  --color-marigold: #f2a516;
-  --font-sans: var(--font-inter), var(--font-deva), system-ui, sans-serif;
+  --color-paper: #f4f3f1;
+  --color-surface: #ffffff;
+  --color-raised: #eeeeee;
+  --color-line: #e6e6e6;
+  --color-ink: #0a0a0a;
+  --color-muted: #6b6b6b;
+  --color-pill: #e5e5e5;
+  --color-chart: #1d5fbf;
+  --color-positive: #2e7d32;
+  --color-negative: #c4242a;
+  --font-sans: var(--font-geist), var(--font-deva), Inter, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 body {
   background: var(--color-paper);
   color: var(--color-ink);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
