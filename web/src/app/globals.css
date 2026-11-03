@@ -1,24 +1,62 @@
 @import "tailwindcss";
 
-/* tasteskill app sheet: Achromatic ledger (workspace), ground = stone */
+/* tasteskill app sheet "Achromatic ledger", warmed: paper ground, ink chrome,
+   one data blue (Saaras / mastery), one marigold signal (the wrong thought). */
 @theme {
-  --color-paper: #f4f3f1;
+  --color-paper: #f5f2ec;
   --color-surface: #ffffff;
-  --color-raised: #eeeeee;
-  --color-line: #e6e6e6;
-  --color-ink: #0a0a0a;
-  --color-muted: #6b6b6b;
-  --color-pill: #e5e5e5;
+  --color-raised: #ece8e0;
+  --color-line: #e3ded3;
+  --color-ink: #12110f;
+  --color-ink-2: #2a2824;
+  --color-muted: #6e6a62;
+  --color-pill: #e7e2d8;
   --color-chart: #1d5fbf;
+  --color-chart-soft: #e6eefa;
+  --color-marigold: #e8960c;
+  --color-marigold-soft: #fdf1da;
   --color-positive: #2e7d32;
+  --color-positive-soft: #e3f3e4;
   --color-negative: #c4242a;
+  --color-negative-soft: #fbe6e6;
   --font-sans: var(--font-geist), var(--font-deva), Inter, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-serif: var(--font-serif-display), Georgia, serif;
+  --animate-rise: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-breathe: breathe 1.6s ease-in-out infinite;
+  --animate-bob: bob 3s ease-in-out infinite;
+  --animate-tilt: tilt 1.2s ease-in-out infinite;
+  --animate-hop: hop 0.7s cubic-bezier(0.3, 1.6, 0.5, 1) 2;
+  --animate-shake: shake 0.5s ease-in-out 1;
+  --animate-burst: burst 0.8s ease-out forwards;
+}
+
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes tilt { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-6deg); } }
+@keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-14px) scale(1.04); } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+@keyframes burst {
+  from { transform: translate(0, 0) scale(1); opacity: 1; }
+  to { transform: translate(var(--x), var(--y)) scale(0.4); opacity: 0; }
+}
+svg[class*="animate-"] { transform-box: fill-box; transform-origin: 50% 90%; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.35; }
+  50% { transform: scale(1.18); opacity: 0; }
 }
 
 body {
   background: var(--color-paper);
   color: var(--color-ink);
-  font-size: 14px;
+  font-size: 15px;
   font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }

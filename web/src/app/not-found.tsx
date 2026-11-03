@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { btn } from "@/components/ui";
 
 export default function NotFound() {
   return (
     <div className="py-16">
-      <h1 className="text-2xl font-medium">Yeh page nahi mila</h1>
-      <Link href="/" className="mt-3 inline-block text-muted underline">Back to start</Link>
+      <h1 className="font-serif text-4xl">Yeh page nahi mila</h1>
+      <p className="mt-2 text-muted">This page doesn&apos;t exist.</p>
+      <Link href="/" className={`${btn} mt-6`}>Back to start</Link>
     </div>
   );
 }

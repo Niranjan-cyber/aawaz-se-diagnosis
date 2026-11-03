@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 
-// Saaras accepts WAV reliably; browsers record webm/opus. Decode and re-encode as 16 kHz mono PCM WAV.
+// Saaras rejects webm/opus (verified: 400 Invalid file type). Decode and re-encode as 16 kHz mono PCM WAV.
 async function toWav(blob: Blob): Promise<Blob> {
   const ctx = new AudioContext();
   const buf = await ctx.decodeAudioData(await blob.arrayBuffer());
@@ -23,16 +23,38 @@ async function toWav(blob: Blob): Promise<Blob> {
   return new Blob([v], { type: "audio/wav" });
 }
 
+const BARS = 28;
+
 export function useRecorder() {
   const rec = useRef<MediaRecorder | null>(null);
+  const raf = useRef(0);
+  const ctx = useRef<AudioContext | null>(null);
   const [on, setOn] = useState(false);
+  const [bars, setBars] = useState<number[]>(Array(BARS).fill(0));
+
   async function start() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     rec.current = new MediaRecorder(stream);
     rec.current.start();
+    // live level meter
+    ctx.current = new AudioContext();
+    const an = ctx.current.createAnalyser();
+    an.fftSize = 128;
+    ctx.current.createMediaStreamSource(stream).connect(an);
+    const data = new Uint8Array(an.frequencyBinCount);
+    const tick = () => {
+      an.getByteFrequencyData(data);
+      setBars(Array.from({ length: BARS }, (_, i) => data[2 + i] / 255));
+      raf.current = requestAnimationFrame(tick);
+    };
+    tick();
     setOn(true);
   }
+
   function stop(): Promise<Blob> {
+    cancelAnimationFrame(raf.current);
+    ctx.current?.close();
+    setBars(Array(BARS).fill(0));
     return new Promise((res) => {
       const r = rec.current!;
       const chunks: Blob[] = [];
@@ -46,5 +68,5 @@ export function useRecorder() {
       r.stop();
     });
   }
-  return { on, start, stop };
+  return { on, bars, start, stop };
 }
