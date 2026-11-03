@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build plan</title>
+<style>
+  :root {
+    --bg: #eef1f4; --surface: #ffffff; --ink: #18232e; --muted: #5a6876; --rule: #d3dae1;
+    --proto: #1662d6; --mvp: #7b3fe4; --done: #17803d; --doing: #c26a00; --blocked: #c62b3a;
+    --chip: #e7ecf1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f151b; --surface: #17202a; --ink: #e4ebf2; --muted: #93a2b1; --rule: #2a3643;
+      --proto: #5b9bff; --mvp: #a983ff; --done: #4cc47a; --doing: #f0a347; --blocked: #ff6b7a; --chip: #223040; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 30px; line-height: 1.15; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 22px; }
+  .progress { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; }
+  .bar { flex: 1; height: 8px; background: var(--rule); border-radius: 4px; overflow: hidden; display: flex; }
+  .bar span { display: block; height: 100%; }
+  .progress b { font-size: 15px; white-space: nowrap; }
+  .spine { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 30px; }
+  .exit { background: var(--surface); border-radius: 10px; padding: 14px 16px; border-left: 4px solid var(--proto); }
+  .exit.mvp { border-left-color: var(--mvp); }
+  .exit h2 { font-size: 15px; margin: 0 0 6px; }
+  .exit ul { margin: 0; padding-left: 18px; color: var(--muted); }
+  .risks { grid-column: 1 / -1; background: var(--surface); border-radius: 10px; padding: 12px 16px; color: var(--muted); }
+  .risks strong { color: var(--ink); }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .filters button { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 16px; cursor: pointer;
+    border: 1px solid var(--rule); background: var(--surface); color: var(--ink); }
+  .filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .line { position: relative; padding-left: 46px; }
+  .phase-label { position: relative; font-weight: 650; font-size: 17px; margin: 22px 0 12px; }
+  .phase-label small { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 8px; }
+  .stop { position: relative; margin-bottom: 12px; }
+  .stop::before { content: ""; position: absolute; left: -31px; top: -12px; bottom: -12px; width: 6px;
+    background: var(--c); }
+  .stop.first::before { top: 22px; }
+  .stop.last::before { bottom: calc(100% - 22px); }
+  .dot { position: absolute; left: -39px; top: 13px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface); border: 5px solid var(--c); }
+  .stop.done .dot { background: var(--c); }
+  .stop.milestone .dot { width: 30px; height: 30px; left: -43px; top: 9px; border-width: 6px; }
+  .card { background: var(--surface); border-radius: 10px; padding: 12px 16px; cursor: pointer; border: 1px solid transparent; }
+  .card:hover, .card:focus-visible { border-color: var(--c); outline: none; }
+  .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .id { font-weight: 700; color: var(--c); }
+  .title { font-weight: 600; }
+  .status { margin-left: auto; font-size: 12px; padding: 2px 9px; border-radius: 10px; background: var(--chip); color: var(--muted); }
+  .status.done { color: var(--done); } .status.in-progress { color: var(--doing); } .status.blocked { color: var(--blocked); }
+  .goal { margin: 4px 0 8px; }
+  .meta { display: flex; gap: 6px; flex-wrap: wrap; font-size: 12.5px; }
+  .chip { background: var(--chip); border-radius: 6px; padding: 2px 8px; color: var(--muted); }
+  .chip.skill { color: var(--ink); }
+  .details { display: none; margin-top: 12px; border-top: 1px solid var(--rule); padding-top: 10px; font-size: 14px; }
+  .card[aria-expanded="true"] .details { display: block; }
+  .details p { margin: 0; }
+  a { color: var(--proto); }
+  .details h3 { font-size: 13px; margin: 10px 0 3px; color: var(--muted); font-weight: 600; }
+  .details ul, .details ol { margin: 0; padding-left: 20px; }
+  .details code { font-size: 12.5px; }
+  .hidden { display: none; }
+  .open { margin-top: 30px; background: var(--surface); border-radius: 10px; padding: 14px 16px; }
+  .open h2 { font-size: 15px; margin: 0 0 6px; }
+  @media (max-width: 640px) { .spine { grid-template-columns: 1fr; } h1 { font-size: 24px; } }
+  @media (prefers-reduced-motion: no-preference) { .card { transition: border-color .15s; } }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const PLAN = {"project": "Aawaz se Diagnosis", "generated": "2026-11-03", "build_mode": "Sprint", "deadline": "30 minutes from kickoff", "time_budget_hours": 0.5, "team": [{"name": "Niranjan", "focus": "full stack"}], "stack": {"frontend": "Next.js 15 (App Router, Tailwind) on Vercel", "backend": "FastAPI + SQLite on Render (free web service)", "ai": "Saaras v3 (speech-to-text, hi-IN), Sarvam-105B (misconception classification and re-teaching), Bulbul v3 (text-to-speech)"}, "urls": {"frontend": "https://web-blush-gamma-25.vercel.app", "backend": "<BACKEND_URL>"}, "modifiers": [], "sources": [{"artifact": "Brief / problem statement", "path": "pasted in chat", "status": "assumed"}, {"artifact": "Feature scope", "path": "", "status": "missing"}, {"artifact": "Screen flows", "path": "", "status": "missing"}, {"artifact": "Architecture", "path": "", "status": "missing"}, {"artifact": "SKILLS.md / SKILL-PLAYBOOK.md", "path": "", "status": "missing"}], "spine": {"prototype_exit": ["On the public Vercel URL, a judge plays the sample Hindi clip (or records their own), sees the Saaras transcript and a named misconception within 10 s", "The judge picks a re-teach modality (story, number line, real-life analogy) and the content renders, with a Bulbul 'Listen' button", "The judge answers a spoken Bulbul drill, and the mastery graph for that skill changes and survives a page reload", "If Sarvam fails or times out, the screen shows an error with a Retry button and the sample-clip path still works"], "mvp_exit": [], "risks": [{"risk": "Saaras plus 105B latency and JSON reliability on short child-style Hindi speech", "step": "B03"}, {"risk": "Render free tier cold start (about 50 s) during the demo", "step": "B02"}]}, "use_cases": {"prototype": ["UC-01", "UC-02", "UC-03"], "mvp": []}, "steps": [{"id": "B01", "title": "Deployed app shell", "phase": "prototype", "status": "done", "milestone": null, "goal": "A judge opens the Vercel URL and sees a clean, branded Aawaz shell with the Speak, Re-teach, Drill and Mastery screens reachable, labelled 'sample data'.", "why_now": "Gets a public URL up first so deploy problems surface at minute 5, not minute 28.", "use_cases": ["UC-01"], "screens": ["S-01", "S-02", "S-03", "S-04"], "components": ["frontend"], "scope_in": ["Next.js + Tailwind app", "4-screen navigation with a stepper", "'Powered by Sarvam: Saaras, 105B, Bulbul' footer", "Vercel deploy"], "scope_out": ["Any API calls", "Recording"], "tasks": ["npx create-next-app (TS, Tailwind, App Router)", "Layout with one accent colour, large type, generous spacing", "Stub the 4 screens with sample content and a visible 'sample data' badge", "vercel --prod"], "skills": [], "kind": "setup", "acceptance": ["The public URL loads and all 4 screens are reachable by nav", "Every stub shows a 'sample data' badge", "At 390px width nothing scrolls horizontally", "An unknown route shows a friendly 404, not a blank page"], "tests": [], "browser_check": ["Open <FRONTEND_URL>, click through the 4 screens, and take screenshot b01-screens.png of each", "Open <FRONTEND_URL>/nope and take screenshot b01-404.png"], "states": {}, "done_check": ["Open <FRONTEND_URL> and confirm all 4 screens render with the sample badge", "The browser check passes and its screenshots are reviewed"], "deploys": ["frontend"], "estimate_hours": 0.08, "depends_on": [], "track": "A", "fallback": "Deploy a static export if the Next.js build fails on Vercel.", "notes": "UI: one accent colour, big Devanagari-friendly type (Noto Sans Devanagari), soft cards, no gradients overload. A taste/frontend-design skill is not installed; follow these rules by hand."}, {"id": "B02", "title": "Backend on Render, mastery persisted", "phase": "prototype", "status": "todo", "milestone": null, "goal": "The Mastery screen shows real per-skill scores read from the Render API's SQLite database, replacing the sample data.", "why_now": "Proves the frontend-to-backend contract, CORS and env vars, and starts the Render cold start early.", "use_cases": ["UC-03"], "screens": ["S-04"], "components": ["backend"], "scope_in": ["FastAPI with GET /health, GET /mastery/{student}, POST /mastery", "SQLite table mastery(student, skill, score, updated_at)", "CORS allowing the Vercel origin", "Render deploy from render.yaml", "Frontend NEXT_PUBLIC_API_URL"], "scope_out": ["Sarvam calls"], "tasks": ["main.py with 3 routes", "Seed 4 fraction skills at 0.3", "render.yaml (python, uvicorn)", "Wire the Mastery screen to fetch, with a 'waking up server' state"], "skills": [], "kind": "feature", "acceptance": ["The Mastery screen shows 4 skills with scores from the API, with no sample badge", "While the API is cold, the screen shows 'waking up the server' rather than an empty chart", "If the API is down, the screen shows an error with Retry, never zeros", "A POST to /mastery changes the score returned by the next GET"], "tests": ["unit: score update clamps to 0..1", "integration: POST then GET /mastery returns the updated score; an unknown student is created with defaults"], "browser_check": ["Open <FRONTEND_URL>/mastery and take screenshot b02-success.png", "Block the API host and reload, then take screenshot b02-failed.png showing Retry"], "states": {"S-04": ["loading", "success", "failed"]}, "done_check": ["Open <FRONTEND_URL>/mastery and confirm the scores come from <BACKEND_URL>/mastery/demo", "The browser check passes and its screenshots are reviewed"], "deploys": ["frontend", "backend", "database"], "estimate_hours": 0.08, "depends_on": ["B01"], "track": "A", "fallback": "If Render is slow to provision, keep localStorage mastery behind a flag.", "notes": "Render free instances lose SQLite data on redeploy, so seed on startup. Add a keep-warm ping before the demo."}, {"id": "B03", "title": "Speak and get diagnosed", "phase": "prototype", "status": "todo", "milestone": null, "goal": "A student records (or plays the sample clip of) a spoken Hindi explanation and sees the Saaras transcript plus the named misconception, with the evidence phrase highlighted.", "why_now": "This is the riskiest unknown and the winning feature: if Saaras plus 105B JSON classification is unreliable, we want the fallback with time left.", "use_cases": ["UC-01"], "screens": ["S-01", "S-02"], "components": ["backend", "frontend", "Saaras", "Sarvam-105B"], "scope_in": ["Browser MediaRecorder with a Record/Stop UI", "'Play sample' button using a Bulbul-generated Hindi clip saved to public/samples/", "POST /diagnose (audio) calls Saaras v3 with hi-IN, then 105B with a fixed label list", "Label set: M1 bigger denominator means bigger fraction, M2 add numerators and denominators, M3 whole-number thinking, M4 none", "Transcript card plus a misconception card with a confidence chip"], "scope_out": ["Re-teaching", "Drills"], "tasks": ["SARVAM_API_KEY in Render env", "Generate the sample clip once with Bulbul: 'Mujhe lagta hai 1/3 bada hai 1/2 se kyunki 3 bada hai 2 se'", "Classifier prompt returns JSON {misconception_id, skill, evidence, confidence}; parse with fallback to M4", "Frontend states: recording, running, success, failed"], "skills": [], "kind": "feature", "acceptance": ["The sample clip returns transcript text and misconception M1 within 10 s", "A silent or too-short recording shows 'we couldn't hear you, try again', never a diagnosis", "If the 105B output is not valid JSON, the app shows 'unsure' with a Retry, not a made-up label", "The API key never appears in frontend code or network responses"], "tests": ["unit: classifier JSON parser handles valid, fenced-in-markdown and garbage outputs", "unit: unknown misconception ids map to M4", "integration: POST /diagnose with the sample clip returns 200 and a transcript; with an empty file returns 422"], "browser_check": ["Open <FRONTEND_URL>/speak, click Play sample, and take screenshot b03-success.png of the diagnosis", "Submit an empty recording and take screenshot b03-failed.png", "Reload and confirm the page returns to the idle state: b03-reload.png"], "states": {"S-01": ["empty", "running", "failed"], "S-02": ["success", "failed"]}, "done_check": ["Open <FRONTEND_URL>/speak, click Play sample, and see the transcript and M1 within 10 s with no sample badge", "The browser check passes and its screenshots are reviewed"], "deploys": ["frontend", "backend"], "estimate_hours": 0.12, "depends_on": ["B02"], "track": "A", "fallback": "If the live mic or Saaras fails on stage, DIAGNOSE_MODE=fixture returns the recorded sample transcript and diagnosis.", "notes": "Parameter names differ between SDK docs (language_code and target_language_code, saaras:v3). Check against the installed sarvamai version. Creative touch: highlight the exact spoken phrase that revealed the misconception."}, {"id": "B04", "title": "Re-teach in three modalities", "phase": "prototype", "status": "todo", "milestone": null, "goal": "After a diagnosis, the student picks Story, Number line or Real-life analogy and sees a Hindi re-teach for that misconception, which they can hear through Bulbul.", "why_now": "Second half of the core loop (diagnose, then fix), and it shows off Bulbul.", "use_cases": ["UC-02"], "screens": ["S-02"], "components": ["backend", "frontend", "Sarvam-105B", "Bulbul"], "scope_in": ["POST /reteach {misconception_id, modality} generates Hindi text with 105B, cached per pair in SQLite", "POST /tts calls Bulbul and returns base64 audio", "Number line is a React SVG component that plots the two fractions from the diagnosis", "Tabs for the 3 modalities and a Listen button", "Echo-back: Bulbul first repeats the student's reasoning kindly ('Tumne socha ki...')"], "scope_out": ["Drills", "Streaming audio"], "tasks": ["Per-modality prompts (short, child-friendly Hindi, 4 sentences max)", "Cache table reteach_cache", "Audio player with loading and failed states", "Number line component driven by two fractions from the diagnosis"], "skills": [], "kind": "feature", "acceptance": ["Each of the 3 modalities renders Hindi content for M1 within 8 s, and the second view is instant from cache", "The number line shows 1/3 and 1/2 at the correct positions", "If Bulbul fails, the text still shows and Listen shows 'audio unavailable, retry'", "Content is never blank: a failed generation shows an error, not an empty card"], "tests": ["unit: the cache returns the stored text on the second call without calling the model", "unit: number line position maths (a/b to x coordinate)", "integration: POST /tts returns base64 audio that decodes to a non-empty WAV"], "browser_check": ["From the diagnosed state, click each tab and take screenshots b04-story.png, b04-numberline.png, b04-analogy.png", "Force a Bulbul failure and take screenshot b04-audio-failed.png"], "states": {"S-02": ["loading", "success", "failed"]}, "done_check": ["Open <FRONTEND_URL>/speak, diagnose the sample, open all 3 tabs, and play Listen", "The browser check passes and its screenshots are reviewed"], "deploys": ["frontend", "backend"], "estimate_hours": 0.1, "depends_on": ["B03"], "track": "A", "fallback": "RETEACH_MODE=fixture serves hand-written Hindi text for M1, and audio is pre-generated.", "notes": "Keep prompts under about 60 words to save tokens."}, {"id": "B05", "title": "Spoken drill and mastery update", "phase": "prototype", "status": "todo", "milestone": "prototype-exit", "goal": "The student hears a Bulbul-spoken drill, answers aloud, gets feedback, and sees the skill's mastery graph move on the Mastery screen.", "why_now": "Closes the loop (diagnose, teach, practise, track) and delivers the prototype exit.", "use_cases": ["UC-03"], "screens": ["S-03", "S-04"], "components": ["backend", "frontend", "Saaras", "Sarvam-105B", "Bulbul"], "scope_in": ["POST /drill generates 3 targeted questions for the skill, with Bulbul audio each", "POST /answer: Saaras transcribes, a simple check or 105B marks it, and the mastery score updates (+0.15 right, -0.05 wrong)", "Mastery 'constellation' SVG: skills as nodes, brightness equals score, animating on change", "Tap-to-answer fallback buttons for noisy rooms"], "scope_out": ["Auth, multiple students, adaptive difficulty"], "tasks": ["Drill prompt returns JSON [{q_hi, answer}]", "Answer check normalises Hindi numerals and fractions", "Wire mastery POST to the existing B02 route", "Mastery graph animation"], "skills": [], "kind": "feature", "acceptance": ["A correct spoken answer raises the targeted skill's score and the graph visibly updates", "An unintelligible answer is not marked wrong: it shows 'say that again' and the score is unchanged", "The mastery score survives a page reload, because it is read from the API", "If drill generation fails, the screen shows an error with Retry and the mastery screen still loads"], "tests": ["unit: the answer normaliser maps 'ek tihai' and '1/3' to the same value", "unit: the mastery update rule clamps to 0..1", "integration: POST /answer with a correct clip raises mastery; with an empty file returns 422 and leaves mastery unchanged"], "browser_check": ["Run the full golden path on <FRONTEND_URL>: Play sample, diagnose, re-teach, drill, answer. Take screenshots b05-1..b05-5.png", "Reload the Mastery screen and take b05-persisted.png", "Force an API failure on the drill and take b05-failed.png"], "states": {"S-03": ["loading", "running", "success", "failed"], "S-04": ["success", "failed"]}, "done_check": ["On <FRONTEND_URL>, walk the whole golden path in under 90 s with no sample badges", "The mastery graph for fraction comparison changes after a correct answer and still shows the change after a reload", "The browser check passes and its screenshots are reviewed"], "deploys": ["frontend", "backend"], "estimate_hours": 0.12, "depends_on": ["B04"], "track": "A", "fallback": "Tap-to-answer buttons count as the answer if the mic or Saaras is flaky.", "notes": "Freeze after this step. Remaining time goes to the demo run-through and a keep-warm ping on Render."}], "browser_tool": "Playwright MCP (screenshots reviewed by the agent)", "bugs": [], "open_questions": ["Exact Saaras and Bulbul parameter names differ between doc snippets (language_code vs target_language_code, speaker names). Verify against sarvamai 0.1.43 in B03.", "Total estimated time is about 30 minutes for one builder. If a second person is available, split frontend (B01, B04 UI) and backend (B02, B03 API).", "tasteskill, ponytail and caveman are not installed. UI taste rules are in B01 notes, and prompts are kept short for token efficiency."], "changelog": [{"date": "2026-11-03", "change": "Initial plan"}]};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const list = (a, tag = "ul") => a && a.length ? `<${tag}>${a.map(x => `<li>${esc(x)}</li>`).join("")}</${tag}>` : "<p>—</p>";
+const steps = (PLAN.steps || []).filter(s => s.status !== "cut");
+const done = steps.filter(s => s.status === "done").length;
+const doing = steps.filter(s => s.status === "in-progress").length;
+const pct = n => steps.length ? (100 * n / steps.length) : 0;
+const hours = steps.reduce((a, s) => a + (+s.estimate_hours || 0), 0);
+document.title = `${PLAN.project || "Project"} build plan`;
+
+function stepHTML(s, i, arr) {
+  const c = s.phase === "mvp" ? "var(--mvp)" : "var(--proto)";
+  const cls = ["stop", s.status, s.milestone ? "milestone" : "", i === 0 ? "first" : "", i === arr.length - 1 ? "last" : ""].join(" ");
+  const ms = s.milestone === "prototype-exit" ? " 🏁 prototype exit" : s.milestone === "mvp-exit" ? " 🏁 MVP exit" : "";
+  const tags = [...(s.use_cases || []), ...(s.screens || [])].map(t => `<span class="chip">${esc(t)}</span>`).join("");
+  const skills = (s.skills || []).map(k => `<span class="chip skill">${esc(k.name || k)}</span>`).join("");
+  return `<div class="${cls}" data-status="${esc(s.status || "todo")}" style="--c:${c}">
+    <span class="dot" aria-hidden="true"></span>
+    <div class="card" tabindex="0" role="button" aria-expanded="false">
+      <div class="head"><span class="id">${esc(s.id)}</span><span class="title">${esc(s.title)}${ms}</span>
+        <span class="status ${esc(s.status || "todo")}">${esc(s.status || "todo")}</span></div>
+      <p class="goal">${esc(s.goal)}</p>
+      <div class="meta">${tags}${skills}${s.estimate_hours ? `<span class="chip">~${esc(s.estimate_hours)} h</span>` : ""}${s.track ? `<span class="chip">track ${esc(s.track)}</span>` : ""}</div>
+      <div class="details">
+        ${s.why_now ? `<h3>Why now</h3><p>${esc(s.why_now)}</p>` : ""}
+        <h3>Done when (on the public URL)</h3>${list(s.done_check, "ol")}
+        <h3>Skills, in order</h3>${(s.skills || []).length ? `<ol>${s.skills.map(k => `<li><b>${esc(k.name || k)}</b>${k.use ? ` — ${esc(k.use)}` : ""}</li>`).join("")}</ol>` : "<p>—</p>"}
+        <h3>In scope</h3>${list(s.scope_in)}
+        <h3>Out of scope</h3>${list(s.scope_out)}
+        ${s.fallback ? `<h3>If it goes wrong</h3><p>${esc(s.fallback)}</p>` : ""}
+        <h3>Deploys</h3><p>${esc((s.deploys || []).join(", "))}${(s.depends_on || []).length ? ` · after ${esc(s.depends_on.join(", "))}` : ""}</p>
+        <h3>Prompt</h3><p><code>prompts/${esc(s.id)}-…md</code></p>
+      </div>
+    </div></div>`;
+}
+
+const sp = PLAN.spine || {};
+const proto = steps.filter(s => s.phase === "prototype"), mvp = steps.filter(s => s.phase === "mvp");
+const urls = PLAN.urls || {};
+document.getElementById("app").innerHTML = `
+  <h1>${esc(PLAN.project || "Project")}: from deployed prototype to MVP</h1>
+  <p class="sub">${esc(PLAN.build_mode || "")} mode${PLAN.deadline ? ` · deadline ${esc(PLAN.deadline)}` : ""} · ~${hours} h estimated${PLAN.time_budget_hours ? ` of ${esc(PLAN.time_budget_hours)} h available` : ""}${urls.frontend ? ` · <a href="${esc(urls.frontend)}">${esc(urls.frontend)}</a>` : ""}</p>
+  <div class="progress"><div class="bar"><span style="width:${pct(done)}%;background:var(--done)"></span><span style="width:${pct(doing)}%;background:var(--doing)"></span></div>
+    <b>${done} of ${steps.length} steps live</b></div>
+  <section class="spine">
+    <div class="exit"><h2>Prototype is done when</h2>${list(sp.prototype_exit)}</div>
+    <div class="exit mvp"><h2>MVP is done when</h2>${list(sp.mvp_exit)}</div>
+    ${(sp.risks || []).length ? `<div class="risks"><strong>Riskiest unknowns:</strong> ${sp.risks.map(r => `${esc(r.risk)} (${esc(r.step)})`).join("; ")}</div>` : ""}
+  </section>
+  <div class="filters" role="group" aria-label="Filter by status">
+    ${["all", "todo", "in-progress", "done", "blocked"].map(f => `<button data-f="${f}" aria-pressed="${f === "all"}">${f === "all" ? "All steps" : f}</button>`).join("")}
+  </div>
+  <div class="line">
+    <div class="phase-label" style="color:var(--proto)">Prototype<small>${proto.length} steps</small></div>
+    ${proto.map(stepHTML).join("")}
+    ${mvp.length ? `<div class="phase-label" style="color:var(--mvp)">MVP<small>${mvp.length} steps</small></div>${mvp.map(stepHTML).join("")}` : ""}
+  </div>
+  ${(PLAN.open_questions || []).length ? `<section class="open"><h2>Open questions and assumptions</h2>${list(PLAN.open_questions)}</section>` : ""}`;
+
+document.querySelectorAll(".card").forEach(c => {
+  const toggle = () => c.setAttribute("aria-expanded", c.getAttribute("aria-expanded") !== "true");
+  c.addEventListener("click", e => { if (!e.target.closest("a")) toggle(); });
+  c.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+});
+document.querySelectorAll(".filters button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".filters button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  document.querySelectorAll(".stop").forEach(s => s.classList.toggle("hidden", b.dataset.f !== "all" && s.dataset.status !== b.dataset.f));
+}));
+</script>
+</body>
+</html>
