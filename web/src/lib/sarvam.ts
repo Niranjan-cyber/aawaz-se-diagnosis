@@ -24,7 +24,7 @@ export async function stt(audio: Blob): Promise<string> {
   f.append("model", "saaras:v3");
   f.append("language_code", "hi-IN");
   const r = await fetch("/api/sarvam/speech-to-text", { method: "POST", body: f });
-  if (!r.ok) throw new Error(`Saaras ${r.status}`);
+  if (!r.ok) throw new Error(`Saaras couldn't read the audio (${r.status}): ${(await r.text()).slice(0, 120)}`);
   return (await r.json()).transcript ?? "";
 }
 
